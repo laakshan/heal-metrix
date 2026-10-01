@@ -36,6 +36,23 @@
   const params = new URLSearchParams(location.search);
   let session = (params.get('session') || '').trim();
   let peer = null, conn = null, connected = false, sending = false;
+  // Paste the same public Cloudflare Worker URL here after deployment, or it can be
+  // supplied in localStorage as healMetrixTurnUrl. No TURN secret belongs in this file.
+  const TURN_CREDENTIALS_URL = localStorage.getItem('healMetrixTurnUrl') || '';
+  async function getIceConfig() {
+    const fallback = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    if (!TURN_CREDENTIALS_URL) return fallback;
+    try {
+      const r = await fetch(TURN_CREDENTIALS_URL, { cache: 'no-store' });
+      if (!r.ok) throw new Error('TURN credentials HTTP ' + r.status);
+      const data = await r.json();
+      if (!Array.isArray(data.iceServers) || !data.iceServers.length) throw new Error('No ICE servers returned');
+      return { iceServers: data.iceServers };
+    } catch (e) {
+      console.warn('TURN credentials unavailable; using STUN only:', e);
+      return fallback;
+    }
+  }
   const CHUNK = 48 * 1024;
 
   $('sessionCode').textContent = session || 'ENTER BELOW';
@@ -46,7 +63,7 @@
     $('status').className = 'status' + (cls ? ' '+cls : '');
   }
 
-  function connect(id) {
+  async function connect(id) {
     if (!id) { status('Enter the session ID from the scanner.','bad'); return; }
     if (peer && !peer.destroyed) peer.destroy();
     peer = null; conn = null; connected = false;
@@ -55,7 +72,8 @@
     status('Connecting…');
     if (typeof Peer === 'undefined') { status('PeerJS failed to load. Check internet.','bad'); return; }
     try {
-      peer = new Peer({debug:0});
+      const iceConfig = await getIceConfig();
+      peer = new Peer({debug:0, config: iceConfig});
       peer.on('open', () => {
         conn = peer.connect(session, {reliable:true, serialization:'binary'});
         conn.on('open', () => {

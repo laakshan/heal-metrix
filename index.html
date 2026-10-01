@@ -2369,6 +2369,28 @@ let peerInstance = null;
 let activePeerConn = null;
 let currentSessionId = null;
 
+// TURN credentials endpoint. Deploy turn-worker.js to Cloudflare Workers and paste its
+// HTTPS URL here. TURN is what allows the phone on mobile data to connect to a Mac
+// behind a different NAT/firewall. Leave blank for direct/STUN-only mode.
+const TURN_CREDENTIALS_URL = localStorage.getItem('healMetrixTurnUrl') || '';
+
+async function getIceConfig() {
+  const fallback = { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' }
+  ] };
+  if (!TURN_CREDENTIALS_URL) return fallback;
+  try {
+    const r = await fetch(TURN_CREDENTIALS_URL, { cache: 'no-store' });
+    if (!r.ok) throw new Error('TURN credentials HTTP ' + r.status);
+    const data = await r.json();
+    if (!Array.isArray(data.iceServers) || !data.iceServers.length) throw new Error('No ICE servers returned');
+    return { iceServers: data.iceServers };
+  } catch (e) {
+    console.warn('TURN credentials unavailable; using STUN only:', e);
+    return fallback;
+  }
+}
+
 function handleIncomingWoundPhoto(dataUrl) {
   playBeep(1100, 'triangle', 0.15);
   closePhoneModal();
@@ -2415,7 +2437,7 @@ function updateSessionQr() {
   }
 }
 
-function createDesktopSession() {
+async function createDesktopSession() {
   if (peerInstance && !peerInstance.destroyed) peerInstance.destroy();
   peerInstance = null;
   activePeerConn = null;
@@ -2430,7 +2452,8 @@ function createDesktopSession() {
   }
 
   try {
-    peerInstance = new Peer(currentSessionId, { debug: 1 });
+    const iceConfig = await getIceConfig();
+    peerInstance = new Peer(currentSessionId, { debug: 1, config: iceConfig });
     peerInstance.on('open', id => {
       currentSessionId = id;
       $('phone-room-code').textContent = id;
@@ -2504,6 +2527,7 @@ if ($('modal-close-btn')) $('modal-close-btn').onclick = closePhoneModal;
 if ($('btn-regen-peer')) $('btn-regen-peer').onclick = createDesktopSession;
 if ($('phone-page-url')) $('phone-page-url').value = PHONE_PAGE_URL;
 if ($('phone-page-url') && PHONE_PAGE_URL) $('phone-page-url').title = 'Automatically detected from this website when hosted online.';
+// Optional TURN endpoint is intentionally configured in browser storage so no secret is embedded.
 if ($('btn-save-phone-url')) $('btn-save-phone-url').onclick = () => {
   PHONE_PAGE_URL = ($('phone-page-url').value || '').trim().replace(/\s+/g,'');
   localStorage.setItem('healMetrixPhonePageUrl', PHONE_PAGE_URL);
