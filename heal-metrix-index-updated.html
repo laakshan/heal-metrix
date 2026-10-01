@@ -1,0 +1,2631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HEAL METRIX // AI Rapid Wound Telemetry</title>
+<style>
+:root {
+  --bg: #030712;
+  --bg-gradient: radial-gradient(circle at 50% -10%, #0d224d 0%, #040918 55%, #02050d 100%);
+  --card: rgba(11, 22, 46, 0.72);
+  --card-hover: rgba(15, 30, 62, 0.85);
+  --card-border: rgba(59, 130, 246, 0.22);
+  --card-border-glow: rgba(96, 165, 250, 0.65);
+  --t: #e2edff;
+  --t-muted: #8ca7d4;
+  --c: #3b82f6;
+  --p: #60a5fa;
+  --g: #34d399;
+  --y: #fbbf24;
+  --r: #f87171;
+  --purple: #a78bfa;
+  --accent-glow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.25);
+  --glow-cyan: 0 0 18px rgba(56, 189, 248, 0.65), 0 0 35px rgba(56, 189, 248, 0.3);
+  --glow-green: 0 0 18px rgba(52, 211, 153, 0.65), 0 0 35px rgba(52, 211, 153, 0.3);
+  --glow-red: 0 0 22px rgba(248, 113, 113, 0.75), 0 0 40px rgba(248, 113, 113, 0.35);
+  --glow-amber: 0 0 18px rgba(251, 191, 36, 0.65), 0 0 35px rgba(251, 191, 36, 0.3);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+body {
+  margin: 0;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--t);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle tech grid background pattern */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+main {
+  max-width: 920px;
+  margin: auto;
+  padding: 24px 18px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Top Emergency Banner */
+.emergency-strip {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.28) 50%, rgba(239, 68, 68, 0.15) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: #fca5a5;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.15);
+}
+.emergency-strip b { color: #fff; }
+.emergency-strip .badge-urgent {
+  background: #ef4444;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: pulse-red 2s infinite ease-in-out;
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+/* Header & Titles */
+.header-wrap {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 4px 14px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #93c5fd;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.brand-chip .dot {
+  width: 7px;
+  height: 7px;
+  background: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #34d399;
+}
+h1 {
+  font-size: clamp(28px, 6.5vw, 44px);
+  margin: 0 0 8px;
+  color: #ffffff;
+  letter-spacing: 6px;
+  font-weight: 700;
+  text-shadow: 0 0 24px rgba(59, 130, 246, 0.55), 0 2px 4px rgba(0,0,0,0.8);
+}
+.sub {
+  color: var(--t-muted);
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Glassmorphic Cards */
+.card {
+  background: var(--card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 22px;
+  margin: 18px 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(59, 130, 246, 0.15);
+}
+.card.p {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(180deg, rgba(16, 32, 68, 0.8) 0%, rgba(10, 20, 44, 0.8) 100%);
+}
+
+/* Section Header Titles */
+.section-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+h2 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--p);
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--c);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--c);
+}
+
+/* HUD Viewfinder Stage */
+.stage {
+  position: relative;
+  background: #01040a;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 6px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+video, canvas.out {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+canvas.out {
+  position: absolute;
+  inset: 0;
+  display: none;
+  cursor: default;
+}
+
+/* HUD Corner Reticles */
+.stage::before, .stage::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 4;
+}
+.stage::before {
+  top: 12px;
+  left: 12px;
+  border-top: 2px solid var(--p);
+  border-left: 2px solid var(--p);
+  box-shadow: -2px -2px 8px rgba(96, 165, 250, 0.5);
+}
+.stage::after {
+  bottom: 12px;
+  right: 12px;
+  border-bottom: 2px solid var(--p);
+  border-right: 2px solid var(--p);
+  box-shadow: 2px 2px 8px rgba(96, 165, 250, 0.5);
+}
+.hud-corner-tr {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-top: 2px solid var(--p);
+  border-right: 2px solid var(--p);
+  box-shadow: 2px -2px 8px rgba(96, 165, 250, 0.5);
+  pointer-events: none;
+  z-index: 4;
+}
+.hud-corner-bl {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  border-bottom: 2px solid var(--p);
+  border-left: 2px solid var(--p);
+  box-shadow: -2px 2px 8px rgba(96, 165, 250, 0.5);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* HUD Live telemetry overlay badge */
+.hud-telemetry {
+  position: absolute;
+  top: 14px;
+  left: 44px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(4, 9, 20, 0.7);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 11px;
+  color: #93c5fd;
+  pointer-events: none;
+}
+.hud-telemetry .cam-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: pulse-cam 1.8s infinite;
+}
+@keyframes pulse-cam {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Dashed alignment frame */
+.frame {
+  position: absolute;
+  inset: 18%;
+  border: 2px dashed rgba(96, 165, 250, 0.75);
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.25), inset 0 0 18px rgba(59, 130, 246, 0.15);
+  transition: opacity 0.3s;
+  z-index: 3;
+}
+.frame::before {
+  content: "TARGET ZONE";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #091733;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #93c5fd;
+  border-radius: 4px;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+/* High-tech Multi-layer Laser scanline */
+.laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #60a5fa;
+  box-shadow: 0 0 16px 4px #3b82f6, 0 0 35px 8px rgba(96, 165, 250, 0.6);
+  top: 0;
+  display: none;
+  z-index: 6;
+  animation: laser-sweep 1.8s linear infinite;
+}
+.laser::after {
+  content: "";
+  position: absolute;
+  top: -30px;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(to top, rgba(59, 130, 246, 0.25), transparent);
+  pointer-events: none;
+}
+@keyframes laser-sweep {
+  0% { top: 0%; opacity: 0.3; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0.3; }
+}
+
+/* Scanning text banner on stage */
+.scanning-hud {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(3, 7, 18, 0.85);
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  z-index: 7;
+  display: none;
+  text-transform: uppercase;
+}
+
+/* Rows & Controls */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: center;
+}
+
+/* CONTROLS GLOW & HOVER EFFECTS (User Requirement) */
+button, a.btn {
+  cursor: pointer;
+  background: #0d2045;
+  color: #cfe2ff;
+  border: 1px solid #23498f;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.3px;
+  user-select: none;
+  position: relative;
+  outline: none;
+}
+button:hover, a.btn:hover {
+  background: #173674;
+  border-color: #4a8dff;
+  color: #ffffff;
+  box-shadow: var(--accent-glow);
+  transform: translateY(-2px);
+}
+button:active, a.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+button:focus-visible, a.btn:focus-visible {
+  box-shadow: var(--accent-glow), 0 0 0 2px #fff;
+}
+
+/* Primary Action Buttons */
+button.p, a.btn.p {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  border-color: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+button.p:hover, a.btn.p:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  border-color: #93c5fd;
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.75), 0 0 45px rgba(59, 130, 246, 0.35);
+  transform: translateY(-2px);
+}
+
+/* Specialized Glowing Demo Buttons */
+#d1 {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+#d1:hover {
+  border-color: #34d399;
+  color: #a7f3d0;
+  background: #082d24;
+  box-shadow: var(--glow-green);
+  transform: translateY(-2px);
+}
+#d2 {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+#d2:hover {
+  border-color: #fbbf24;
+  color: #fef3c7;
+  background: #332608;
+  box-shadow: var(--glow-amber);
+  transform: translateY(-2px);
+}
+#d3 {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+#d3:hover {
+  border-color: #f87171;
+  color: #fee2e2;
+  background: #3a1118;
+  box-shadow: var(--glow-red);
+  transform: translateY(-2px);
+}
+
+/* Form Inputs, Number, Select GLOW ON HOVER/FOCUS */
+select, input[type=number], input[type=tel] {
+  background: #08152e;
+  color: #e2edff;
+  border: 1px solid #1e3f7d;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: 500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: all 0.25s ease;
+  outline: none;
+}
+select:hover, input[type=number]:hover, input[type=tel]:hover {
+  border-color: #60a5fa;
+  background: #0c1e40;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+}
+select:focus, input[type=number]:focus, input[type=tel]:focus {
+  border-color: #93c5fd;
+  background: #0d2249;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.65), inset 0 0 6px rgba(59, 130, 246, 0.2);
+}
+
+#pf-allergies { background:#08152e; color:#e2edff; border:1px solid #1e3f7d; border-radius:10px; padding:10px 14px; font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; outline:none; }
+#pf-allergies:focus { border-color:#93c5fd; box-shadow:0 0 20px rgba(59,130,246,0.65); }
+/* Progress Telemetry Bars */
+.bar {
+  height: 9px;
+  background: #081329;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 6px 0 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 9999px;
+  box-shadow: 0 0 12px currentColor;
+}
+
+/* Metric Rows */
+.metric-row {
+  margin: 10px 0;
+  font-size: 14px;
+}
+.metric-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+.metric-head b {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+/* Severity Banner */
+.lvl-card {
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: rgba(13, 27, 56, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lvl {
+  font: 700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+ul {
+  padding-left: 20px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+li {
+  margin-bottom: 6px;
+}
+li::marker {
+  color: var(--p);
+}
+
+.warn {
+  color: #fbbf24;
+  font-size: 13.5px;
+  line-height: 1.5;
+  background: rgba(251, 191, 36, 0.08);
+  border-left: 3px solid #fbbf24;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+}
+.hide {
+  display: none !important;
+}
+small {
+  opacity: 0.85;
+  line-height: 1.6;
+}
+
+img {
+  border-radius: 10px;
+  border: 1px solid #1a396d;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+}
+
+.hi {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 12px 0;
+  padding: 10px;
+  background: rgba(9, 21, 46, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.hi b {
+  color: #93c5fd;
+}
+
+/* Healing timeline grid */
+.tl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.tl div {
+  background: rgba(9, 21, 46, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: all 0.25s ease;
+}
+.tl div:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+  transform: translateY(-2px);
+}
+.tl b {
+  color: #60a5fa;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+}
+
+/* First Aid Checklist Checkboxes */
+#ck label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: rgba(9, 21, 46, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 14px;
+  user-select: none;
+}
+#ck label:hover {
+  background: rgba(15, 33, 72, 0.8);
+  border-color: #60a5fa;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
+  transform: translateX(3px);
+}
+#ck input {
+  accent-color: #3b82f6;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+}
+
+/* Quiz glowing answers */
+#qz .quiz-item {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+}
+#qz p {
+  margin: 6px 0 10px;
+  font-weight: 600;
+}
+#qz .row {
+  margin-top: 4px;
+}
+#qz button {
+  flex: 1 1 180px;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px 14px;
+}
+
+/* Speaking State on Voice Button */
+button.speaking {
+  background: #ef4444 !important;
+  border-color: #f87171 !important;
+  color: #fff !important;
+  box-shadow: var(--glow-red) !important;
+  animation: speaking-pulse 1.4s infinite ease-in-out;
+}
+@keyframes speaking-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body::before, .emergency-strip, button, a.btn, select, input, .stage, #qz, .hud-telemetry {
+    display: none !important;
+  }
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  .card {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    color: #000 !important;
+    page-break-inside: avoid;
+    margin: 12px 0 !important;
+  }
+  h1, h2 {
+    color: #000000 !important;
+    text-shadow: none !important;
+  }
+  .warn {
+    background: #fdf6e2 !important;
+    color: #856404 !important;
+    border-left-color: #856404 !important;
+  }
+  .print-banner {
+    display: block !important;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+}
+.print-banner { display: none; }
+
+/* Phone Camera Enhancements & Modal Styles */
+.btn-phone-glow {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+  border-color: #818cf8 !important;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.45) !important;
+}
+.btn-phone-glow:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  border-color: #c4b5fd !important;
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.75), 0 0 40px rgba(96, 165, 250, 0.35) !important;
+  transform: translateY(-2px);
+}
+.btn-pair {
+  background: rgba(30, 58, 138, 0.5) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  color: #93c5fd !important;
+}
+.btn-pair:hover {
+  background: rgba(37, 99, 235, 0.3) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: var(--accent-glow) !important;
+}
+.cam-detected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+  animation: pulse-green 2.5s infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  50% { box-shadow: 0 0 14px 2px rgba(52, 211, 153, 0.35); }
+}
+
+.phone-guide-banner {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.phone-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.phone-guide-item {
+  background: rgba(9, 21, 46, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  padding: 8px 10px;
+  border-radius: 8px;
+  line-height: 1.45;
+  color: var(--t-muted);
+  font-size: 12px;
+}
+.phone-guide-item b {
+  display: block;
+  color: #fff;
+  margin-bottom: 2px;
+  font-size: 12.5px;
+}
+
+/* Modal Overlay & Dialog */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: modal-fade 0.2s ease-out;
+}
+.modal-overlay.hide {
+  display: none !important;
+}
+@keyframes modal-fade {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal-dialog {
+  background: linear-gradient(180deg, #0b1a38 0%, #050d1e 100%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(59, 130, 246, 0.3);
+  border-radius: 18px;
+  max-width: 620px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 22px;
+  color: var(--t);
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+.modal-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 18px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.25);
+  padding-bottom: 10px;
+  overflow-x: auto;
+}
+.modal-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--t-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.modal-tab-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.3);
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+  animation: modal-fade 0.2s ease-out;
+}
+.qr-box-wrap {
+  text-align: center;
+  margin: 16px 0;
+}
+.qr-box {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  display: inline-block;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+}
+.qr-box canvas, .qr-box img {
+  display: block !important;
+  width: 180px !important;
+  height: 180px !important;
+  margin: 0 auto;
+}
+
+/* Remote Mobile Shutter Page Styling */
+#remote-view {
+  display: none;
+  min-height: 100vh;
+  padding: 24px 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.remote-card {
+  background: var(--card);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+/* ===== CLEAN CLINICAL UI ===== */
+:root{--bg:#07111f;--bg-gradient:radial-gradient(circle at 50% -10%,#123b55 0%,#081525 48%,#050b14 100%);--card:rgba(13,27,43,.88);--card-hover:rgba(18,38,58,.96);--card-border:rgba(93,210,191,.18);--t:#eef8f7;--t-muted:#9bb4b8;--c:#2dd4bf;--p:#67e8f9;--g:#34d399;--y:#fbbf24;--r:#fb7185;--purple:#a78bfa;--accent-glow:0 0 18px rgba(45,212,191,.28)}
+body{font-size:14px} main{max-width:860px;padding:18px 14px 48px}.header-wrap{margin-bottom:16px}.brand-chip{letter-spacing:1.2px;background:rgba(45,212,191,.08);border-color:rgba(103,232,249,.25);color:#a5f3fc}h1{letter-spacing:3px;font-size:clamp(30px,7vw,42px);text-shadow:0 0 20px rgba(45,212,191,.25)}.sub{font-size:13px;letter-spacing:.2px}.card{border-radius:16px;padding:18px;margin:12px 0;background:linear-gradient(180deg,rgba(16,35,53,.9),rgba(8,20,33,.92))}.card:hover{transform:translateY(-1px);border-color:rgba(103,232,249,.3);box-shadow:0 12px 30px rgba(0,0,0,.4),0 0 18px rgba(45,212,191,.08)}h2{font-size:12px;letter-spacing:1.4px;color:#8ff3e7}.row{gap:8px;margin-top:10px}button,a.btn{padding:9px 13px;border-radius:9px;font-size:12.5px}button.p,a.btn.p{background:linear-gradient(135deg,#0f766e,#0e7490);border-color:#2dd4bf;box-shadow:0 4px 14px rgba(13,148,136,.22)}button.p:hover,a.btn.p:hover{background:linear-gradient(135deg,#0d9488,#0891b2);box-shadow:0 0 22px rgba(45,212,191,.35)}select,input[type=number],input[type=tel],input[type=text]{background:#091a2b;border-color:#24506a}.stage{aspect-ratio:16/10;border-color:rgba(103,232,249,.28)}.frame{inset:15%;border-color:rgba(103,232,249,.65)}.frame::before{content:"PLACE WOUND HERE";background:#0b2230;color:#a5f3fc;border-color:rgba(103,232,249,.3)}.emergency-strip{margin-bottom:14px;border-radius:10px;padding:8px 12px;font-size:12px}.phone-guide-banner{background:rgba(8,27,39,.8);border-color:rgba(45,212,191,.18);padding:10px 12px}.phone-guide-grid{grid-template-columns:repeat(3,1fr);gap:7px}.phone-guide-item{font-size:11.5px;padding:8px;background:rgba(8,22,34,.75);border-color:rgba(103,232,249,.12)}.profile-box{display:grid;grid-template-columns:auto 110px 1fr;gap:8px;align-items:center;margin-top:10px;padding:10px 12px;background:linear-gradient(90deg,rgba(45,212,191,.07),rgba(103,232,249,.03));border:1px solid rgba(45,212,191,.18);border-radius:12px}.profile-box .profile-title{font-size:11px;font-weight:800;letter-spacing:1px;color:#8ff3e7}.profile-box input{width:100%!important;min-width:0!important}.profile-note{grid-column:1/-1;font-size:10.5px;color:var(--t-muted)}.connection-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.connection-option{padding:12px;border:1px solid rgba(103,232,249,.13);border-radius:12px;background:rgba(7,20,31,.65)}.connection-option b{display:block;margin-bottom:3px;color:#eef8f7;font-size:12.5px}.connection-option span{font-size:11px;color:var(--t-muted);line-height:1.4}.modal-dialog{max-width:520px;padding:18px;border-color:rgba(45,212,191,.25)}.modal-tabs{display:none}@media(max-width:650px){.phone-guide-grid,.connection-grid{grid-template-columns:1fr}.profile-box{grid-template-columns:1fr 110px}.profile-box .profile-title{grid-column:1/-1}.profile-note{grid-column:1/-1}.row button,.row a.btn{flex:1 1 auto}.stage{aspect-ratio:4/3}}
+
+</style>
+
+<style>
+.qr-placeholder{width:180px;min-height:180px;display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;text-align:center;border:1px dashed rgba(103,232,249,.28);border-radius:12px;background:rgba(3,15,25,.55);color:#7890a6;font-size:11px;line-height:1.45}
+.qr-ip-row{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.qr-ip-row input{width:190px;min-width:0;padding:7px 9px;border-radius:8px;border:1px solid rgba(103,232,249,.22);background:#061521;color:#e6f7ff;font-size:11px;outline:none}
+.qr-ip-row input:focus{border-color:#2dd4bf;box-shadow:0 0 0 2px rgba(45,212,191,.08)}
+.qr-ip-row button{padding:7px 10px;font-size:11px;border-radius:8px}
+</style>
+
+<style id="heal-metrix-wide-ui">
+/* HEAL METRIX WIDE DESKTOP REFRESH */
+:root{
+  --hm-max: 1500px;
+  --hm-gap: clamp(14px,1.5vw,24px);
+}
+main{max-width:var(--hm-max)!important;width:100%;padding:20px clamp(14px,2.4vw,38px) 70px!important}
+.header-wrap{padding:8px 0 10px}
+.emergency-strip{max-width:none}
+.card{margin:var(--hm-gap) 0!important;padding:clamp(18px,1.8vw,28px)!important}
+/* Make the scanner the visual hero on wide screens */
+main > .card:nth-of-type(2){
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(300px,.65fr);
+  gap:22px;
+  align-items:start;
+}
+main > .card:nth-of-type(2) > .section-tag{grid-column:1/-1;margin-bottom:-6px}
+main > .card:nth-of-type(2) > .stage{grid-column:1;grid-row:2/5;min-height:500px}
+main > .card:nth-of-type(2) > .row,
+main > .card:nth-of-type(2) > .profile-box,
+main > .card:nth-of-type(2) > .phone-guide-banner,
+main > .card:nth-of-type(2) > .warn{grid-column:2}
+main > .card:nth-of-type(2) > .row{margin-top:0!important}
+.stage{aspect-ratio:16/9!important;min-height:420px;border-radius:20px}
+.frame{inset:14% 16%}
+/* Give result/analysis sections more breathing room */
+.tl{grid-template-columns:repeat(4,minmax(0,1fr))}
+.connection-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.profile-box{grid-template-columns:auto minmax(90px,120px) minmax(180px,1fr)}
+/* Dashboard-like paired sections */
+main > .card:nth-of-type(n+3){
+  box-shadow:0 16px 45px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+/* Better wide controls */
+main > .card:nth-of-type(1) .row{gap:10px}
+main > .card:nth-of-type(1) button,main > .card:nth-of-type(1) a.btn{min-height:42px}
+button,a.btn{min-height:40px}
+/* Subtle ambient light */
+body::after{content:"";position:fixed;inset:auto -15vw -30vh -15vw;height:55vh;background:radial-gradient(ellipse,rgba(45,212,191,.07),transparent 65%);pointer-events:none;z-index:0}
+main{z-index:2}
+@media(max-width:1050px){
+  main > .card:nth-of-type(2){display:block}
+  main > .card:nth-of-type(2) > *{grid-column:auto!important;grid-row:auto!important}
+  main > .card:nth-of-type(2) > .stage{min-height:0;margin-bottom:14px}
+  .tl{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+  main{padding:12px 10px 42px!important}
+  .stage{aspect-ratio:4/3!important;min-height:0}
+  .connection-grid,.tl{grid-template-columns:1fr}
+  .profile-box{grid-template-columns:1fr 110px}
+  .profile-box .profile-title,.profile-note{grid-column:1/-1}
+  .card{border-radius:15px!important}
+}
+</style>
+
+</head>
+<body>
+<main>
+
+<!-- Top Emergency Strip -->
+<div class="emergency-strip">
+  <div>
+    <span class="badge-urgent">EMERGENCY</span> &nbsp; Heavy bleeding, deep wounds or severe burns → seek urgent medical care.
+  </div>
+</div>
+
+<div class="header-wrap">
+  <div class="brand-chip"><span class="dot"></span> HEAL METRIX AI · PROTOCOL v2.4</div>
+  <h1>HEAL METRIX</h1>
+  <div class="sub">Smart wound photo check &amp; care guidance</div>
+</div>
+
+<!-- PRINT REPORT HEADER (Only shows when printing) -->
+<div class="print-banner">
+  <h2>HEAL METRIX CLINICAL SUMMARY REPORT</h2>
+  <p>Generated on: <span id="print-date"></span> · Patient Self-Telemetry Guide</p>
+</div>
+
+<!-- 00 // PERMISSIONS -->
+<div class="card">
+  <div class="section-tag">
+    <h2>DEVICE ACCESS</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">HUD SENSORS</span>
+  </div>
+  <div class="row" style="margin-top:0">
+    <button id="pc" class="p">🎥 ALLOW CAMERA</button>
+    <button id="pl" class="p">📍 ALLOW LOCATION</button>
+    <button id="pb">✔ ALLOW BOTH SENSORS</button>
+    <button type="button" onclick="openPhoneModal()" class="btn-pair">📱 USE PHONE AS CAMERA</button>
+  </div>
+  <p id="ps" style="margin:12px 0 0;font-size:14px;color:var(--t-muted)">
+    Camera Status: <b id="sc" style="color:#93c5fd">not asked</b> &nbsp;·&nbsp; Location Status: <b id="sl" style="color:#93c5fd">not asked</b>
+  </p>
+  <p class="warn" id="ph" style="margin:10px 0 0">
+    If a browser popup appears, tap <b>Allow</b>. If running inside a sandboxed preview, open this page in its own tab for full camera/GPS hardware access.
+  </p>
+  <div class="row">
+    <a class="btn" id="nt" target="_blank" rel="noopener">↗ OPEN IN DEDICATED TAB</a>
+  </div>
+</div>
+
+<!-- 01 // SCAN -->
+<div class="card">
+  <div class="section-tag">
+    <h2>WOUND SCAN</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">OPTICAL FEED</span>
+  </div>
+  
+  <div class="stage" id="stage">
+    <!-- Corner HUD Brackets -->
+    <div class="hud-corner-tr"></div>
+    <div class="hud-corner-bl"></div>
+
+    <!-- Live Telemetry Status Pill -->
+    <div class="hud-telemetry" id="htel">
+      <div class="cam-dot"></div>
+      <span id="htel-text">SENSOR STANDBY</span>
+    </div>
+
+    <video id="v" autoplay playsinline muted></video>
+    <canvas class="out" id="o"></canvas>
+    
+    <div class="frame" id="fr"></div>
+    <div class="laser" id="ls"></div>
+    <div class="scanning-hud" id="scanhud">ANALYZING SPECTRAL SIGNATURE…</div>
+  </div>
+
+  <!-- Camera Device Source Selector & Continuity Cam -->
+  <div class="row" style="margin-top:12px;gap:8px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace;font-weight:700">CAMERA SOURCE:</span>
+    <select id="cam-select" title="Select camera device" style="flex:1;min-width:200px">
+      <option value="">🎥 Auto-Detect / Default Sensor</option>
+    </select>
+    <button type="button" id="cam-refresh" title="Scan for connected cameras (e.g. iPhone Continuity)" style="padding:10px 14px">🔄 REFRESH</button>
+    <span id="cam-badge" class="cam-detected-badge hide">📱 iPhone / Phone Camera Ready</span>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <button id="cam">▶ START CAMERA</button>
+    <button id="snap" class="p">◉ SCAN WOUND</button>
+
+    <!-- Native Phone Camera Shutter Button -->
+    <button type="button" id="btn-phone-cam" class="p btn-phone-glow">📱 PHONE CAMERA</button>
+    <input type="file" id="f-cam" accept="image/*" capture="environment" class="hide">
+    <button type="button" id="btn-usb-photo">🔌 USB / WIRED PHOTO</button>
+    <input type="file" id="f-usb-photo" accept="image/*" class="hide">
+
+    <label>
+      <button type="button" onclick="document.getElementById('f').click()">⬆ UPLOAD PHOTO</button>
+    </label>
+    <input type="file" id="f" accept="image/*" class="hide">
+
+    <!-- Wireless Phone Hub Modal Trigger -->
+    <button type="button" id="btn-phone-pair" class="btn-pair">
+      📡 PAIR PHONE VIA QR / WI-FI
+    </button>
+  </div>
+
+  <div class="row">
+    <select id="wt" title="Select injury category">
+      <option value="">Wound category: not sure / general</option>
+      <option value="cut">Laceration / Cut</option>
+      <option value="burn">Thermal / Burn</option>
+      <option value="scrape">Abrasion / Scrape / Graze</option>
+      <option value="bite">Puncture / Animal / Insect Bite</option>
+      <option value="bruise">Contusion / Bruise / Hematoma</option>
+    </select>
+    <button id="d1">DEMO: MILD</button>
+    <button id="d2">DEMO: MODERATE</button>
+    <button id="d3">DEMO: SEVERE</button>
+  </div>
+
+  <div class="profile-box">
+    <span class="profile-title">PERSONALISE RESULT</span>
+    <input id="pf-age" type="number" min="0" max="120" placeholder="Age" aria-label="Age in years">
+    <input id="pf-allergies" type="text" placeholder="Allergies (optional)" aria-label="Allergies">
+    <span class="profile-note">Age changes the care guidance. Details stay on this device.</span>
+  </div>
+
+  <p class="warn" id="msg" style="margin-top:14px">
+    Position the wound inside the dashed HUD frame under bright, even lighting. Tap <b>START CAMERA</b>, <b>SNAP WITH PHONE CAMERA</b>, or drag-and-drop a photo here.
+  </p>
+
+  <div class="phone-guide-banner">
+    <div style="font-weight:700;color:#8ff3e7;margin-bottom:5px">PHONE OPTIONS</div>
+    <div class="connection-grid">
+      <div class="connection-option"><b>📱 QR / Wi‑Fi</b><span>One QR code. Scan → capture → send.</span></div>
+      <div class="connection-option"><b>🔌 USB / Wired</b><span>Connect by USB, then choose a photo. No internet needed.</span></div>
+      <div class="connection-option"><b>🍎 iPhone Camera</b><span>If macOS exposes it, select it above and start camera.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 // ANALYSIS -->
+<div class="card p hide" id="res">
+  <div class="section-tag">
+    <h2>RESULT</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">CLASSIFICATION</span>
+  </div>
+
+  <div class="lvl-card">
+    <div class="lvl" id="lvl">● AWAITING SCAN</div>
+    <div id="wound-score-badge" style="font-family:ui-monospace,monospace;font-size:14px;color:#93c5fd"></div>
+  </div>
+  <p id="sum" style="font-size:15px;line-height:1.6;margin-top:0"></p>
+
+  <!-- Metrics Breakdown -->
+  <div class="metric-row">
+    <div class="metric-head"><span>Fresh Erythema / Active Bleeding</span> <b id="a1">0%</b></div>
+    <div class="bar"><i id="b1" style="background:var(--r);color:var(--r)"></i></div>
+  </div>
+  <div class="metric-row">
+    <div class="metric-head"><span>Coagulated Blood / Scabbed Tissue</span> <b id="a2">0%</b></div>
+    <div class="bar"><i id="b2" style="background:#d97706;color:#d97706"></i></div>
+  </div>
+  <div class="metric-row">
+    <div class="metric-head"><span>Yellow / Green Exudate (Possible Infection)</span> <b id="a3">0%</b></div>
+    <div class="bar"><i id="b3" style="background:var(--y);color:var(--y)"></i></div>
+  </div>
+  <div class="metric-row">
+    <div class="metric-head"><span>Hypoxic / Very Dark Tissue</span> <b id="a4">0%</b></div>
+    <div class="bar"><i id="b4" style="background:var(--purple);color:var(--purple)"></i></div>
+  </div>
+
+  <h2 style="margin-top:24px">PERSONALISED CARE</h2>
+  <ul id="tips"></ul>
+
+  <div class="row">
+    <button id="sv" class="p">💾 SAVE TO TRACKER</button>
+    <button id="vo">🔊 READ ALOUD</button>
+    <button id="pr">🖨 PRINT / EXPORT PDF</button>
+  </div>
+
+  <!-- Interactive Coin Measurement -->
+  <h2 style="margin-top:24px">CALIBRATED SIZE ESTIMATION</h2>
+  <div class="row" style="align-items:center;margin-top:0">
+    <span style="font-size:13px;color:var(--t-muted)">Reference Coin Diameter:</span>
+    <input id="cd" type="number" value="24" min="5" max="50" style="width:75px">
+    <span style="font-size:13px;color:var(--t-muted)">mm</span>
+    <button id="ms">📏 MEASURE SIZE</button>
+    <button id="ms-reset" class="hide" style="padding:10px 14px">↺ RESET PINS</button>
+  </div>
+  <p id="sz" class="warn" style="margin-top:10px">
+    Place a standard coin (e.g., US Quarter ~24mm, Euro €1 ~23mm, Singapore $1 ~24.6mm) next to the wound before scanning, then tap <b>MEASURE SIZE</b>.
+  </p>
+
+  <!-- Tetanus Assessment -->
+  <h2 style="margin-top:24px">TETANUS RISK CHECK</h2>
+  <div class="row" style="margin-top:0">
+    <select id="t1" onchange="tetanus()">
+      <option value="0">Object was clean / sterile</option>
+      <option value="1">Rusty / soil / animal contact / dirty object</option>
+    </select>
+    <select id="t2" onchange="tetanus()">
+      <option value="0">Vaccinated / booster within last 5 years</option>
+      <option value="1">Vaccinated 5–10 years ago</option>
+      <option value="2">Over 10 years ago / not sure</option>
+    </select>
+  </div>
+  <p id="tt" style="font-size:14px;padding:10px 12px;background:rgba(9,21,46,0.6);border-radius:8px;border:1px solid rgba(59,130,246,0.2)"></p>
+  
+  <p class="warn">
+    ⚠ Educational demonstration tool. Color analysis does not constitute formal medical diagnosis. When in doubt, seek evaluated professional care.
+  </p>
+</div>
+
+<!-- FIRST AID CHECKLIST -->
+<div class="card">
+  <div class="section-tag">
+    <h2>FIRST AID INTERVENTION CHECKLIST</h2>
+    <span id="ck-count" style="font-size:12px;color:var(--g);font-family:ui-monospace,monospace">0 / 5 COMPLETED (0%)</span>
+  </div>
+  <div class="bar"><i id="cp" style="background:var(--g);color:var(--g)"></i></div>
+  <div id="ck"></div>
+</div>
+
+<!-- HEALING TIMELINE -->
+<div class="card">
+  <div class="section-tag">
+    <h2>PHYSIOLOGICAL HEALING TIMELINE</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">4 PHASES</span>
+  </div>
+  <div class="tl">
+    <div>
+      <b>1 · Hemostasis</b>
+      Minutes to hours. Platelets aggregate and fibrin forms a mesh clot to seal torn vessels.
+    </div>
+    <div>
+      <b>2 · Inflammation</b>
+      Days 1–4. Neutrophils &amp; macrophages clear debris. Mild warmth and swelling are normal.
+    </div>
+    <div>
+      <b>3 · Proliferation</b>
+      Days 4–21. Granulation tissue and collagen scaffold rebuild; wound margins contract.
+    </div>
+    <div>
+      <b>4 · Maturation</b>
+      Weeks to months. Collagen reorganizes, tensile strength improves, scar gradually fades.
+    </div>
+  </div>
+</div>
+
+<!-- HOSPITAL CRITERIA -->
+<div class="card p" style="border-color:rgba(239, 68, 68, 0.45)">
+  <div class="section-tag">
+    <h2 style="color:#f87171">IMMEDIATE EMERGENCY RED FLAGS</h2>
+    <span style="font-size:12px;color:#f87171;font-family:ui-monospace,monospace">CALL DISPATCH IF:</span>
+  </div>
+  <ul style="margin-bottom:0">
+    <li>Pulsatile or heavy bleeding that will not stop after 10 minutes of direct, firm pressure</li>
+    <li>Deep, gaping lacerations showing subcutaneous adipose, muscle fascia, tendon, or bone</li>
+    <li>Rapidly spreading angry erythema (red streaks), fever &gt;38°C (100.4°F), or foul odor</li>
+    <li>Penetrating animal/human bites, or puncture from corroded metal/soil</li>
+    <li>Neurovascular deficit: numbness, loss of motor control, or third-degree burns</li>
+  </ul>
+</div>
+
+<!-- PROGRESS TRACKER -->
+<div class="card">
+  <div class="section-tag">
+    <h2>LONGITUDINAL PROGRESS TRACKER</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">LOCAL TELEMETRY</span>
+  </div>
+  <div id="th"></div>
+  <div id="cmp"></div>
+  <div class="row">
+    <button id="clr">CLEAR HISTORY</button>
+  </div>
+  <small style="margin-top:8px;display:block">Scans and encrypted telemetry are stored client-side in your local browser sandbox only.</small>
+</div>
+
+<!-- 04 // NEARBY HOSPITALS & DISPATCH -->
+<div class="card">
+  <div class="section-tag">
+    <h2>NEARBY CARE</h2>
+    <span style="font-size:12px;color:var(--t-muted);font-family:ui-monospace,monospace">GPS LOCK</span>
+  </div>
+  <div class="row">
+    <button id="loc">📍 USE MY CURRENT GPS</button>
+  </div>
+  <p id="lt" style="color:var(--t-muted);font-size:14px;margin:10px 0">
+    Tap to capture high-accuracy coordinates to locate immediate trauma centers and clinics.
+  </p>
+  <div class="row hide" id="links">
+    <a class="btn p" id="mh" target="_blank" rel="noopener">🏥 TRAUMA HOSPITALS</a>
+    <a class="btn" id="mc" target="_blank" rel="noopener">🩺 URGENT CLINICS</a>
+    <a class="btn p" id="me" target="_blank" rel="noopener" style="background:#b91c1c;border-color:#ef4444">🚑 EMERGENCY (A&amp;E)</a>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <input id="ec" type="tel" placeholder="Emergency contact mobile #" style="flex:1;min-width:200px">
+    <button id="sm" class="p">📨 DISPATCH MY GPS VIA SMS</button>
+  </div>
+  <p class="warn" style="font-size:16px;letter-spacing:0.5px;margin:18px 0 0">
+    Global Hotlines: Singapore <b>995</b> · United States <b>911</b> · European Union <b>112</b> · India <b>108</b> · UK <b>999</b>
+  </p>
+</div>
+
+<!-- FIRST AID QUIZ -->
+<div class="card">
+  <div class="section-tag">
+    <h2>FIRST AID KNOWLEDGE CHECK</h2>
+    <span id="qr" style="color:#60a5fa;font-size:13px;font-family:ui-monospace,monospace;font-weight:700">SCORE: 0 / 0</span>
+  </div>
+  <div id="qz"></div>
+  <div class="row" style="margin-top:12px">
+    <button id="qz-reset" style="display:none">↺ RETAKE QUIZ</button>
+  </div>
+</div>
+
+<!-- METHOD & LIMITATIONS -->
+<div class="card p">
+  <div class="section-tag">
+    <h2>METHODOLOGY &amp; TECHNICAL LIMITATIONS</h2>
+  </div>
+  <small style="display:block;line-height:1.75;font-size:13.5px">
+    The HEAL METRIX optical engine samples RGB spectra across the central target region of interest (ROI) and computes chromatic cluster distributions correlating with acute bleeding, dried scab formation, exudate pigmentation, and necrotic tissue. This pipeline does not evaluate subsurface tissue depth, tactile tenderness, or bacterial culture titers. Image sensor optics, ambient lumen variance, and dermatological pigment baselines introduce measurement variance. Use this tool strictly as educational telemetry alongside qualified medical evaluation.
+  </small>
+</div>
+
+<!-- WHY CHOOSE THIS -->
+<div class="card">
+  <div class="section-tag">
+    <h2>WHY HEAL METRIX CLINICAL TELEMETRY</h2>
+  </div>
+  <small style="display:block;font-size:13px;line-height:1.9;opacity:0.88">
+    Modern computer-assisted wound care platforms bridge the gap between initial trauma and professional triage. By tracking standardized chromatic metrics over consecutive healing phases, patients and triage nurses can quantify changes that manual visual inspection often overlooks. Immediate location-aware triage coordinates dispatch and maps trauma centers before secondary complications emerge.
+  </small>
+</div>
+
+</main>
+
+<!-- PHONE CONNECTION -->
+<div id="phone-modal" class="modal-overlay hide">
+  <div class="modal-dialog">
+    <button class="modal-close" id="modal-close-btn" aria-label="Close">×</button>
+    <div style="font-size:11px;color:#8ff3e7;letter-spacing:1.5px;font-weight:800">PHONE CAMERA</div>
+    <h2 style="font-size:19px;color:#fff;margin:5px 0 6px">Connect by session ID</h2>
+    <p style="font-size:12.5px;color:var(--t-muted);margin:0 0 12px">Scan once. Your phone sends the photo directly to this scanner.</p>
+
+    <div class="qr-box-wrap" style="margin:8px 0">
+      <div class="qr-box" id="qr-target-container"><div class="qr-placeholder">Starting secure session…</div></div>
+    </div>
+    <div id="phone-sync-status" style="font-size:12px;color:#fbbf24;font-weight:600">Starting session…</div>
+    <div style="margin-top:8px;font-size:10.5px;color:var(--t-muted)">Session: <b id="phone-room-code" style="color:#67e8f9">—</b></div>
+    <div class="row" style="margin-top:9px">
+      <button type="button" id="btn-copy-pairing-link">Copy phone link</button>
+      <button type="button" id="btn-regen-peer">New session</button>
+    </div>
+
+    <div style="margin-top:10px;padding:10px 12px;background:rgba(6,23,34,.72);border:1px solid rgba(103,232,249,.12);border-radius:12px">
+      <div style="font-size:10px;color:var(--t-muted);margin-bottom:5px">PHONE PAGE URL <span style="color:#34d399">• auto if hosted together</span></div>
+      <div class="row" style="margin:0"><input id="phone-page-url" type="url" placeholder="https://yourname.github.io/wound-phone.html" style="flex:1;min-width:0"><button type="button" id="btn-save-phone-url">Save</button></div>
+      <div style="font-size:10px;color:var(--t-muted);margin-top:6px">Put <b>wound-scanner-session.html</b> and <b>wound-phone.html</b> in the same HTTPS folder. Then the QR is automatic.</div>
+    </div>
+
+    <div class="connection-option" style="margin-top:10px">
+      <b>🌐 Works across different networks</b>
+      <span>The phone page uses the session ID to find this scanner through WebRTC. The phone and Mac do not need to be on the same Wi‑Fi.</span>
+    </div>
+    <div class="connection-option" style="margin-top:8px">
+      <b>📷 Phone action</b>
+      <span>Scan → allow camera → take photo. The image is sent automatically.</span>
+    </div>
+    <p style="font-size:10.5px;color:var(--t-muted);margin:10px 0 0">Internet is required for the signaling service. The image itself is sent peer-to-peer when a direct WebRTC path is available.</p>
+  </div>
+</div>
+
+<!-- ========================================================
+     MOBILE REMOTE SHUTTER INTERFACE (Active when ?mode=remote)
+     ======================================================== -->
+<div id="remote-view">
+  <div class="remote-card">
+    <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--p);letter-spacing:2px">HEAL METRIX // OPTICAL TELEMETRY</div>
+    <h1 style="font-size:24px;margin:8px 0 6px">REMOTE OPTICAL SHUTTER</h1>
+    <div id="remote-status-badge" style="font-size:12.5px;padding:6px 14px;border-radius:20px;display:inline-block;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;margin-bottom:12px">
+      🟡 Connecting to Mac Workstation…
+    </div>
+    <p style="font-size:13.5px;color:var(--t-muted);margin:0 0 18px;line-height:1.5">
+      Use this phone to photograph the wound. Your photo will beam wirelessly to your computer screen in real time.
+    </p>
+
+    <button type="button" id="btn-remote-snap" class="p btn-phone-glow" style="width:100%;padding:18px;font-size:17px;font-weight:700;border-radius:12px;box-shadow:0 0 25px rgba(124,58,237,0.5)">
+      📸 CAPTURE WOUND PHOTO
+    </button>
+    <input type="file" id="f-remote-cam" accept="image/*" capture="environment" class="hide">
+
+    <div id="remote-transferred-banner" class="hide" style="margin-top:14px;padding:10px 14px;background:rgba(52,211,153,0.15);border:1px solid #34d399;border-radius:10px;color:#34d399;font-weight:600;font-size:13px">
+      ✔ Photo beamed to workstation screen!
+    </div>
+
+    <!-- Preview Box -->
+    <div id="remote-preview-box" style="display:none;margin-top:18px;text-align:left">
+      <div style="font-size:12px;color:var(--t-muted);margin-bottom:6px;font-family:ui-monospace,monospace">CAPTURED TELEMETRY:</div>
+      <img id="remote-preview-img" style="width:100%;height:auto;max-height:260px;object-fit:cover;border-radius:10px;border:1px solid rgba(59,130,246,0.4);margin-bottom:10px">
+      <button type="button" id="btn-remote-resend" class="p" style="width:100%;padding:12px;font-size:14px;background:#059669;border-color:#34d399">
+        🚀 TRANSMIT PHOTO TO WORKSTATION
+      </button>
+    </div>
+  </div>
+
+  <div class="remote-card" style="font-size:12.5px;color:var(--t-muted);line-height:1.6">
+    <b style="color:#fff;display:block;margin-bottom:4px">💡 Photography Tips for Optimal Telemetry:</b>
+    • Hold phone 15–20 cm (6–8 in) away from the wound under bright, indirect lighting.<br>
+    • Keep phone steady so edges of tissue remain sharp and in focus.<br>
+    • If measuring size, ensure a coin (quarter/€1) is placed beside the injury.
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let stream = null;
+let scanTimeout = null;
+let pos = null;
+let last = null;
+let mm = 0;
+let pts = [];
+let originalCanvasBackup = null;
+let isSpeaking = false;
+
+// Audio context helper for subtle futuristic feedback
+let audioCtx = null;
+function playBeep(freq = 800, type = 'sine', duration = 0.08) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+// Set print date
+if ($('print-date')) {
+  $('print-date').textContent = new Date().toLocaleString();
+}
+
+// Stage HUD status helper
+function setHudStatus(text, active = false) {
+  const t = $('htel-text');
+  if (t) t.textContent = text;
+  const dot = document.querySelector('.cam-dot');
+  if (dot) dot.style.background = active ? '#34d399' : '#94a3b8';
+}
+
+// Camera control
+function stopCam() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+}
+
+$('cam').onclick = () => {
+  stopCam();
+  getCam();
+};
+
+$('snap').onclick = () => {
+  const v = $('v');
+  if (!v.videoWidth || $('v').style.display === 'none') {
+    $('msg').textContent = 'Please start the camera first (or tap SNAP WITH PHONE CAMERA).';
+    $('msg').style.color = '#fbbf24';
+    return;
+  }
+  playBeep(650, 'triangle', 0.1);
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth;
+  c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  run(c);
+};
+
+// Unified File Upload & Native Phone Camera Handler
+function handleUploadedFile(file) {
+  if (!file) return;
+  stopCam();
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => {
+    URL.revokeObjectURL(url);
+    const c = document.createElement('canvas');
+    c.width = im.width;
+    c.height = im.height;
+    c.getContext('2d').drawImage(im, 0, 0);
+    run(c);
+  };
+  im.onerror = () => {
+    URL.revokeObjectURL(url);
+    $('msg').textContent = 'Could not decode image file. Please try another format.';
+    $('msg').style.color = '#f87171';
+  };
+  im.src = url;
+}
+
+$('f').onchange = e => {
+  if (!e.target.files || !e.target.files[0]) return;
+  handleUploadedFile(e.target.files[0]);
+  e.target.value = ''; // Allow selecting identical file again
+};
+
+// USB / wired photo import: local file transfer, no internet required.
+const btnUsbPhoto = $('btn-usb-photo');
+const fUsbPhoto = $('f-usb-photo');
+if (btnUsbPhoto && fUsbPhoto) {
+  btnUsbPhoto.onclick = () => fUsbPhoto.click();
+  fUsbPhoto.onchange = e => {
+    if (e.target.files && e.target.files[0]) handleUploadedFile(e.target.files[0]);
+    e.target.value = '';
+  };
+}
+
+// Direct Mobile Camera Shutter button
+const btnPhoneCam = $('btn-phone-cam');
+if (btnPhoneCam) {
+  btnPhoneCam.onclick = () => {
+    $('f-cam').click();
+  };
+}
+
+const fCam = $('f-cam');
+if (fCam) {
+  fCam.onchange = e => {
+    if (!e.target.files || !e.target.files[0]) return;
+    handleUploadedFile(e.target.files[0]);
+    e.target.value = '';
+  };
+}
+
+// Drag and drop onto stage
+const stageEl = $('stage');
+if (stageEl) {
+  ['dragenter', 'dragover'].forEach(name => {
+    stageEl.addEventListener(name, e => {
+      e.preventDefault();
+      stageEl.style.borderColor = '#60a5fa';
+      stageEl.style.boxShadow = '0 0 30px rgba(96, 165, 250, 0.6)';
+    });
+  });
+  ['dragleave', 'drop'].forEach(name => {
+    stageEl.addEventListener(name, e => {
+      e.preventDefault();
+      stageEl.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+      stageEl.style.boxShadow = 'none';
+    });
+  });
+  stageEl.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) {
+      handleUploadedFile(files[0]);
+    }
+  });
+}
+
+// Scan execution
+function run(src) {
+  if (scanTimeout) clearTimeout(scanTimeout);
+  
+  const o = $('o');
+  o.width = src.width;
+  o.height = src.height;
+  o.getContext('2d').drawImage(src, 0, 0);
+
+  o.style.display = 'block';
+  $('v').style.display = 'none';
+  $('fr').style.display = 'none';
+  $('ls').style.display = 'block';
+  $('scanhud').style.display = 'block';
+  setHudStatus('ACQUIRING SPECTRUM', true);
+  
+  $('msg').textContent = 'Scanning tissue colors and chromatic variance…';
+  $('msg').style.color = '#60a5fa';
+
+  playBeep(440, 'sawtooth', 0.2);
+
+  scanTimeout = setTimeout(() => {
+    $('ls').style.display = 'none';
+    $('scanhud').style.display = 'none';
+    setHudStatus('ANALYSIS COMPLETE', false);
+    playBeep(880, 'sine', 0.15);
+    analyse(o);
+  }, 2400);
+}
+
+// Wound analysis algorithm
+function analyse(o) {
+  const x = o.getContext('2d');
+  const W = o.width;
+  const H = o.height;
+  const sx = W * 0.18 | 0;
+  const sy = H * 0.18 | 0;
+  const sw = W * 0.64 | 0;
+  const sh = H * 0.64 | 0;
+
+  const d = x.getImageData(sx, sy, sw, sh);
+  const p = d.data;
+  let n = 0, red = 0, dry = 0, yel = 0, dk = 0;
+
+  for (let i = 0; i < p.length; i += 4) {
+    const r = p[i], g = p[i+1], b = p[i+2];
+    n++;
+    let k = 0;
+    if (r + g + b < 120) {
+      dk++;
+      k = 4;
+    } else if (r > 140 && g < 95 && b < 105 && r > g * 1.8) {
+      red++;
+      k = 1;
+    } else if (r > 70 && r < 150 && g < 65 && b < 70 && r > g * 1.6) {
+      dry++;
+      k = 2;
+    } else if (r > 140 && g > 130 && b < 100 && Math.abs(r - g) < 60) {
+      yel++;
+      k = 3;
+    }
+
+    if (k) {
+      const c = [0, [255, 59, 92], [217, 119, 6], [251, 191, 36], [167, 139, 250]][k];
+      p[i] = c[0];
+      p[i+1] = c[1];
+      p[i+2] = c[2];
+    }
+  }
+
+  x.putImageData(d, sx, sy);
+  
+  // Highlight target frame boundary
+  x.strokeStyle = '#60a5fa';
+  x.lineWidth = Math.max(3, W / 200);
+  x.strokeRect(sx, sy, sw, sh);
+
+  // Cache clean backup of analyzed image for coin pin markers
+  originalCanvasBackup = x.getImageData(0, 0, W, H);
+
+  const P = v => +(v / n * 100).toFixed(1);
+  const a = [P(red), P(dry), P(yel), P(dk)];
+
+  a.forEach((v, i) => {
+    $('a' + (i + 1)).textContent = v + '%';
+    $('b' + (i + 1)).style.width = Math.min(100, v * 2.5) + '%';
+  });
+
+  const wound = +(a[0] + a[1] + a[2] + a[3]).toFixed(1);
+  let lv, col, sm;
+
+  if (wound < 4) {
+    lv = 'NO CLEAR WOUND';
+    col = 'var(--g)';
+    sm = 'Little wound-like color found. Move closer, improve lighting, and rescan.';
+  } else if (a[2] > 4 || a[3] > 8 || a[0] > 35) {
+    lv = 'HIGH ALERT';
+    col = 'var(--r)';
+    sm = 'Strong signs requiring prompt medical evaluation: prominent erythema/bleeding, yellow exudate or necrotic margins.';
+  } else if (a[0] > 12 || a[2] > 1.5 || a[3] > 3) {
+    lv = 'MODERATE ALERT';
+    col = 'var(--y)';
+    sm = 'Visible inflammation or active surface trauma. Conscientious wound care and daily monitoring strongly advised.';
+  } else {
+    lv = 'MILD';
+    col = 'var(--g)';
+    sm = 'Superficial dried blood or minor abrasion. Simple antiseptic hygiene and sterile dressing should suffice.';
+  }
+
+  last = { a, lv, col, sm, px: red + dry + yel + dk, w: wound };
+
+  // Render protocol recommendations
+  updateTipsAndDisplay();
+  tetanus();
+
+  $('lvl').textContent = '● ' + lv;
+  $('lvl').style.color = col;
+  $('wound-score-badge').textContent = 'TISSUE INDEX: ' + wound + '%';
+  $('sum').textContent = sm + (Number.isInteger(parseInt($('pf-age').value,10)) ? ` · Personalised for age ${parseInt($('pf-age').value,10)}.` : '');
+
+  $('res').classList.remove('hide');
+  $('res').scrollIntoView({ behavior: 'smooth' });
+  $('msg').textContent = 'Scan complete. Color overlay: Red = Active Blood, Orange = Dried Scab, Yellow = Possible Pus/Exudate, Purple = Dark Tissue.';
+  $('msg').style.color = '#34d399';
+
+  // Automatically initiate location check if moderate/high
+  if (wound >= 4 && lv !== 'MILD' && !pos) {
+    $('loc').click();
+  }
+}
+
+// Wound categories knowledge base
+const WT = {
+  cut: [
+    'Laceration / Cut: Apply firm, continuous pressure with a sterile gauze pad for 10 minutes without lifting.',
+    'If cut margins are separated, gaping, or over a joint, medical sutures may be required within 6–8 hours.'
+  ],
+  burn: [
+    'Thermal Burn: Cool immediately under cool, gently running tap water for 10–20 minutes.',
+    'Never apply ice, butter, or oil. Do not rupture intact blisters. Cover loosely with non-adherent sterile dressing.'
+  ],
+  scrape: [
+    'Abrasion: Gently irrigate dirt and gravel with sterile saline or mild soapy water; pat dry.',
+    'Keep wound bed lightly moist with petroleum jelly or antibiotic ointment under a dressing to accelerate re-epithelialization.'
+  ],
+  bite: [
+    'Puncture / Bite: Irrigate vigorously with water and antibacterial soap for several minutes.',
+    'Animal and human bites possess high bacterial virulence. Evaluation for prophylactic antibiotics and rabies/tetanus is mandatory.'
+  ],
+  bruise: [
+    'Contusion / Bruise: Rest and elevate the affected limb. Apply a cloth-wrapped ice pack for 15 minutes at a time.',
+    'Seek evaluation if swelling is rapidly expansive, severely painful, or accompanied by numbness.'
+  ]
+};
+
+const commonTips = [
+  'Wash your hands thoroughly with antibacterial soap and warm water before dressing the area.',
+  'Irrigate gently with clean running water or sterile saline for 5 minutes; avoid harsh alcohol or hydrogen peroxide.',
+  'Apply a thin barrier of antibiotic ointment or medical petroleum to keep the tissue bed moist.',
+  'Cover with a sterile, breathable dressing and change daily or whenever soiled.',
+  'Maintain adequate protein, vitamin C, and zinc intake to promote collagen synthesis and cellular repair.'
+];
+
+const ALLERGY_RULES = [
+  [/latex/, 'Latex allergy: wear nitrile gloves and choose latex-free dressings and bandages.'],
+  [/adhesive|tape|plaster|band-?aid/, 'Adhesive allergy: secure the dressing with gauze and a rolled bandage instead of sticky tape.'],
+  [/neomycin|bacitracin|polysporin|neosporin|antibiotic (ointment|cream)/, 'Ointment allergy: skip antibiotic ointments here. Plain petroleum jelly is a common alternative (confirm with a pharmacist).'],
+  [/penicillin|amoxicillin|cephalosporin|sulfa|antibiotic/, 'Antibiotic allergy: tell any clinician before an antibiotic is prescribed for this wound.'],
+  [/iodine|betadine|povidone/, 'Iodine allergy: avoid povidone-iodine (Betadine); rinse with clean running water or saline.'],
+  [/chlorhexidine|hibiclens/, 'Chlorhexidine allergy: avoid chlorhexidine washes and dressings; rinse with water or saline.'],
+  [/ibuprofen|aspirin|nsaid|naproxen|advil|aleve/, 'NSAID allergy: avoid ibuprofen, aspirin and naproxen for pain; ask a pharmacist for an alternative.'],
+  [/paracetamol|acetaminophen|tylenol/, 'Paracetamol allergy: avoid acetaminophen/paracetamol; ask a pharmacist for an alternative.']
+];
+const escHtml = t => t.replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+
+function personalTips() {
+  const out = [];
+  const age = parseInt($('pf-age').value, 10);
+  if (age >= 0 && age <= 120) {
+    if (age < 1) out.push('Under 1: get medical advice promptly for any wound.');
+    else if (age < 12) out.push(`Age ${age}: use gentle cleaning and get care sooner for deep, dirty or bite wounds.`);
+    else if (age < 18) out.push(`Age ${age}: keep the wound clean and covered; get help sooner if pain, redness or drainage increases.`);
+    else if (age < 65) out.push(`Age ${age}: follow the wound-care steps and monitor for increasing pain, redness, warmth or drainage.`);
+    else out.push(`Age ${age}: healing may take longer. Get care sooner for deep, slow-healing or infected-looking wounds.`);
+  }
+  const al = $('pf-allergies').value.trim();
+  if (al && !/^(none|nil|no|n\/?a|nkda?)\b/i.test(al)) {
+    const low = al.toLowerCase();
+    ALLERGY_RULES.forEach(([re, msg]) => { if (re.test(low)) out.push(msg); });
+    out.push(`Allergies noted (${escHtml(al)}): check ingredient lists on any ointment, antiseptic or dressing before use, and ask a pharmacist if unsure.`);
+  }
+  return out;
+}
+
+['pf-age', 'pf-allergies'].forEach(id => { $(id).oninput = () => { if (last) updateTipsAndDisplay(); }; });
+
+function updateTipsAndDisplay() {
+  if (!last) return;
+  const categoryTips = WT[$('wt').value] || [];
+  let severityTips = [];
+
+  if (last.lv === 'NO CLEAR WOUND') {
+    severityTips = [
+      'Retake the photo in bright, shadow-free lighting.',
+      'Frame the injured zone directly within the central dashed target area.',
+      'If pain, swelling, or underlying injury persists, consult a physician regardless of visual scan.'
+    ];
+  } else if (last.lv === 'HIGH ALERT') {
+    severityTips = [
+      'Visit an urgent care center or emergency department today — use the nearby hospital finder below.',
+      'Active hemorrhage: elevate the limb and maintain firm, uninterrupted compression.',
+      'Do not attempt to extract deeply embedded foreign debris.',
+      'Monitor vigilantly for systemic symptoms: fever, chills, spreading redness streaks, or lymph node tenderness.'
+    ];
+  } else if (last.lv === 'MODERATE ALERT') {
+    severityTips = [
+      ...commonTips.slice(0, 3),
+      'Observe for 48 hours: if peripheral redness expands, throbbing intensifies, or purulent drainage appears, seek clinic care.',
+      'Confirm your tetanus immunization history is up to date.'
+    ];
+  } else {
+    severityTips = commonTips;
+  }
+
+  const allTips = [...personalTips(), ...categoryTips, ...severityTips];
+  $('tips').innerHTML = allTips.map(s => `<li>${s}</li>`).join('');
+}
+
+$('wt').onchange = () => {
+  if (last) updateTipsAndDisplay();
+};
+
+// Location handling
+function showLoc(p) {
+  pos = p;
+  const la = p.coords.latitude.toFixed(5);
+  const lo = p.coords.longitude.toFixed(5);
+  $('lt').innerHTML = `<b>Location Locked:</b> Lat ${la}, Lon ${lo} &nbsp;(Accuracy: ±${Math.round(p.coords.accuracy)}m)`;
+  $('lt').style.color = '#34d399';
+
+  const m = q => `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${la},${lo},14z`;
+  $('mh').href = m('hospital emergency');
+  $('mc').href = m('urgent care clinic');
+  $('me').href = m('emergency room trauma');
+  $('links').classList.remove('hide');
+}
+
+$('loc').onclick = () => {
+  $('lt').textContent = 'Acquiring high-precision GPS telemetry…';
+  $('lt').style.color = '#60a5fa';
+  getLoc();
+};
+
+$('nt').href = location.href;
+
+const help = e => {
+  const n = e && e.name || '';
+  if (!window.isSecureContext && location.protocol !== 'file:') {
+    return 'WebRTC requires a secure HTTPS context or local file protocol.';
+  }
+  if (n === 'NotAllowedError' || n === 'PermissionDeniedError' || (e && e.code === 1)) {
+    return 'Permission denied. Click the lock/camera icon in your address bar to allow sensor access, then reload.';
+  }
+  if (n === 'NotFoundError') return 'No optical camera device found on this system.';
+  if (n === 'NotReadableError') return 'Camera is currently locked by another application.';
+  return 'Sensor unavailable (' + (n || 'error') + '). Try opening in a new dedicated tab.';
+};
+
+const setS = (id, t, ok) => {
+  const e = $(id);
+  if (!e) return;
+  e.textContent = t;
+  e.style.color = ok ? '#34d399' : '#f87171';
+};
+
+async function refreshCameraDevices() {
+  const sel = $('cam-select');
+  if (!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+    const prevVal = sel.value;
+    
+    sel.innerHTML = '<option value="">🎥 Auto-Detect / Default Sensor</option>';
+    let phoneFound = false;
+
+    videoDevices.forEach((d, idx) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      let label = d.label || `Camera ${idx + 1}`;
+      const lower = label.toLowerCase();
+      const isPhone = lower.includes('iphone') || lower.includes('continuity') ||
+                      lower.includes('phone') || lower.includes('camo') ||
+                      lower.includes('droidcam') || lower.includes('epoccam') ||
+                      lower.includes('iriun') || lower.includes('back') || lower.includes('rear');
+      
+      if (isPhone) {
+        phoneFound = true;
+        opt.textContent = `📱 ${label} (Phone/External)`;
+      } else {
+        opt.textContent = `🎥 ${label}`;
+      }
+      sel.appendChild(opt);
+    });
+
+    const badge = $('cam-badge');
+    if (badge) {
+      if (phoneFound) badge.classList.remove('hide');
+      else badge.classList.add('hide');
+    }
+
+    if (prevVal && [...sel.options].some(o => o.value === prevVal)) {
+      sel.value = prevVal;
+    } else if (phoneFound && !prevVal) {
+      const phoneOpt = [...sel.options].find(o => o.textContent.includes('📱'));
+      if (phoneOpt) {
+        sel.value = phoneOpt.value;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not enumerate cameras:', err);
+  }
+}
+
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', refreshCameraDevices);
+}
+if ($('cam-refresh')) {
+  $('cam-refresh').onclick = refreshCameraDevices;
+}
+if ($('cam-select')) {
+  $('cam-select').onchange = () => {
+    if (stream) {
+      stopCam();
+      getCam();
+    }
+  };
+}
+
+async function getCam() {
+  try {
+    stopCam();
+    const sel = $('cam-select');
+    const selectedDeviceId = sel && sel.value ? sel.value : null;
+
+    const videoConstraints = selectedDeviceId
+      ? { deviceId: { exact: selectedDeviceId } }
+      : {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        };
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: videoConstraints
+    });
+    $('v').srcObject = stream;
+    $('v').style.display = 'block';
+    $('o').style.display = 'none';
+    $('fr').style.display = 'block';
+    setS('sc', 'allowed ✔', 1);
+    setHudStatus('CAMERA ACTIVE', true);
+    $('msg').textContent = 'Camera active. Frame wound in the target zone and tap SCAN WOUND.';
+    $('msg').style.color = '#93c5fd';
+
+    // Device labels become available once camera access is allowed
+    await refreshCameraDevices();
+    return 1;
+  } catch (e) {
+    setS('sc', 'denied ✖', 0);
+    setHudStatus('CAMERA ERROR', false);
+    $('ph').textContent = 'Camera: ' + help(e);
+    $('msg').textContent = 'Camera unavailable. Grant permission, select another camera, or use SNAP WITH PHONE CAMERA.';
+    $('msg').style.color = '#f87171';
+    return 0;
+  }
+}
+
+function getLoc() {
+  return new Promise(r => {
+    if (!navigator.geolocation) {
+      setS('sl', 'unsupported ✖', 0);
+      $('lt').textContent = 'Geolocation not supported by this browser client.';
+      return r(0);
+    }
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        setS('sl', 'allowed ✔', 1);
+        showLoc(p);
+        r(1);
+      },
+      e => {
+        setS('sl', 'denied ✖', 0);
+        $('ph').textContent = 'Location: ' + (e.code === 1 ? help({ name: 'NotAllowedError' }) : 'Could not lock position. Check GPS or network.');
+        $('lt').textContent = 'GPS coordinates unavailable. Search "trauma center near me" in your default maps app.';
+        $('lt').style.color = '#f87171';
+        r(0);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
+}
+
+$('pc').onclick = getCam;
+$('pl').onclick = getLoc;
+$('pb').onclick = async () => {
+  await getCam();
+  await getLoc();
+};
+
+try {
+  ['camera', 'geolocation'].forEach((n, i) => {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: n }).then(q => {
+        const u = () => {
+          if (q.state === 'granted') setS(i ? 'sl' : 'sc', 'allowed ✔', 1);
+          else if (q.state === 'denied') setS(i ? 'sl' : 'sc', 'denied ✖', 0);
+        };
+        u();
+        q.onchange = u;
+      }).catch(() => {});
+    }
+  });
+} catch (e) {}
+
+// Tetanus Assessment
+function tetanus() {
+  const d = $('t1').value === '1';
+  const y = $('t2').value;
+  let m = '';
+  if (y === '0') {
+    m = d ? 'Vaccinated within 5 years: booster generally not required, but seek clinical review if deep or puncture-induced.' : 'Vaccinated within 5 years: booster currently up to date.';
+  } else if (y === '1') {
+    m = d ? 'Last vaccination 5–10 years ago with contaminated wound: booster strongly recommended within 48 hours.' : 'Last vaccination 5–10 years ago: booster usually not needed for clean, superficial wounds.';
+  } else {
+    m = 'Last vaccination over 10 years ago or uncertain: consult a physician for a Td/Tdap booster' + (d ? ' as soon as possible (within 24–48 hours).' : ' for continued protection.');
+  }
+  $('tt').textContent = m;
+}
+tetanus();
+
+// Demos
+function demo(k) {
+  stopCam();
+  const c = document.createElement('canvas');
+  c.width = 640;
+  c.height = 480;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 640, 480);
+  g.addColorStop(0, '#d8a17f');
+  g.addColorStop(1, '#c98f6b');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 640, 480);
+
+  const B = (rx, ry, col, n) => {
+    x.fillStyle = col;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.28;
+      const r = Math.sqrt(Math.random());
+      x.beginPath();
+      x.arc(320 + Math.cos(a) * rx * r, 240 + Math.sin(a) * ry * r, 8 + Math.random() * 8, 0, 6.28);
+      x.fill();
+    }
+  };
+
+  if (k === 1) {
+    B(95, 65, 'rgb(120,45,30)', 120);
+    B(40, 25, 'rgb(190,50,60)', 8);
+  } else if (k === 2) {
+    B(110, 80, 'rgb(120,45,30)', 50);
+    B(100, 70, 'rgb(200,40,50)', 160);
+    B(30, 20, 'rgb(215,195,70)', 6);
+  } else {
+    B(125, 90, 'rgb(200,40,50)', 220);
+    B(60, 45, 'rgb(215,195,70)', 40);
+    B(40, 30, 'rgb(35,20,20)', 25);
+  }
+  run(c);
+}
+
+$('d1').onclick = () => demo(1);
+$('d2').onclick = () => demo(2);
+$('d3').onclick = () => demo(3);
+
+// Speech synthesis toggle
+$('vo').onclick = () => {
+  if (!last || !('speechSynthesis' in window)) return;
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    isSpeaking = false;
+    $('vo').innerHTML = '🔊 READ ALOUD';
+    $('vo').classList.remove('speaking');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const tipsText = [...$('tips').children].map(l => l.textContent).join('. ');
+  const speechText = `Alert Level: ${last.lv}. ${$('sum').textContent}. Recommendations: ${tipsText}`;
+  const ut = new SpeechSynthesisUtterance(speechText);
+  ut.rate = 0.95;
+  ut.onstart = () => {
+    isSpeaking = true;
+    $('vo').innerHTML = '⏹ STOP READING';
+    $('vo').classList.add('speaking');
+  };
+  ut.onend = () => {
+    isSpeaking = false;
+    $('vo').innerHTML = '🔊 READ ALOUD';
+    $('vo').classList.remove('speaking');
+  };
+  ut.onerror = () => {
+    isSpeaking = false;
+    $('vo').innerHTML = '🔊 READ ALOUD';
+    $('vo').classList.remove('speaking');
+  };
+  window.speechSynthesis.speak(ut);
+};
+
+// Print / PDF
+$('pr').onclick = () => window.print();
+
+// Calibrated Coin Size Measurement with visual pins
+function resetMeasurement() {
+  mm = 0;
+  pts = [];
+  $('o').style.cursor = 'default';
+  $('ms-reset').classList.add('hide');
+  $('sz').textContent = 'Place a coin next to the wound when you scan, then tap MEASURE SIZE.';
+  $('sz').style.color = '#fbbf24';
+  if (originalCanvasBackup) {
+    $('o').getContext('2d').putImageData(originalCanvasBackup, 0, 0);
+  }
+}
+
+$('ms').onclick = () => {
+  if (!last) {
+    $('sz').textContent = 'Please scan a wound first, with a reference coin adjacent to the wound.';
+    $('sz').style.color = '#f87171';
+    return;
+  }
+  mm = 1;
+  pts = [];
+  $('o').style.cursor = 'crosshair';
+  $('ms-reset').classList.remove('hide');
+  $('sz').textContent = '📍 Tap Edge 1: Click the left/top edge of the coin on the image.';
+  $('sz').style.color = '#60a5fa';
+  if (originalCanvasBackup) {
+    $('o').getContext('2d').putImageData(originalCanvasBackup, 0, 0);
+  }
+};
+
+$('ms-reset').onclick = resetMeasurement;
+
+$('o').addEventListener('click', e => {
+  if (!mm) return;
+  const o = $('o');
+  const r = o.getBoundingClientRect();
+  const W = o.width;
+  const H = o.height;
+  const sc = Math.max(r.width / W, r.height / H);
+  const px = (e.clientX - r.left + (W * sc - r.width) / 2) / sc;
+  const py = (e.clientY - r.top + (H * sc - r.height) / 2) / sc;
+
+  pts.push([px, py]);
+  const x = o.getContext('2d');
+
+  // Draw visual pin marker
+  x.save();
+  x.beginPath();
+  x.arc(px, py, Math.max(6, W / 90), 0, Math.PI * 2);
+  x.fillStyle = pts.length === 1 ? '#34d399' : '#60a5fa';
+  x.shadowColor = '#60a5fa';
+  x.shadowBlur = 10;
+  x.fill();
+  x.lineWidth = 2;
+  x.strokeStyle = '#ffffff';
+  x.stroke();
+  x.font = `bold ${Math.max(12, W / 45)}px sans-serif`;
+  x.fillStyle = '#ffffff';
+  x.fillText(pts.length === 1 ? 'Pin A' : 'Pin B', px + 10, py - 10);
+  x.restore();
+
+  if (pts.length === 1) {
+    $('sz').textContent = '📍 Tap Edge 2: Now click the opposite edge across the coin.';
+  } else if (pts.length === 2) {
+    // Draw connecting measuring line
+    x.save();
+    x.beginPath();
+    x.moveTo(pts[0][0], pts[0][1]);
+    x.lineTo(pts[1][0], pts[1][1]);
+    x.strokeStyle = '#34d399';
+    x.lineWidth = 2.5;
+    x.setLineDash([4, 4]);
+    x.stroke();
+    x.restore();
+
+    const distPx = Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]);
+    const coinDia = +$('cd').value || 24;
+
+    if (distPx < 4) {
+      $('sz').textContent = 'Pins were placed too close together. Tap MEASURE SIZE to try again.';
+      $('sz').style.color = '#f87171';
+      mm = 0;
+      return;
+    }
+
+    const scaleMmPerPx = coinDia / distPx;
+    const estAreaMm2 = last.px * scaleMmPerPx * scaleMmPerPx;
+    const estAreaCm2 = (estAreaMm2 / 100).toFixed(2);
+    
+    mm = 0;
+    o.style.cursor = 'default';
+    $('sz').innerHTML = `<b>Calibration Success:</b> Estimated wound surface area ≈ <b>${Math.round(estAreaMm2)} mm²</b> (≈ <b>${estAreaCm2} cm²</b>). Coin calibrated at ${coinDia}mm.`;
+    $('sz').style.color = '#34d399';
+    playBeep(980, 'sine', 0.12);
+  }
+});
+
+// Storage and tracker
+const SV = () => {
+  try {
+    return JSON.parse(localStorage.getItem('hm') || '[]');
+  } catch (e) {
+    return [];
+  }
+};
+
+function trk() {
+  const h = SV();
+  $('th').innerHTML = h.length
+    ? h.slice().reverse().map(e => `
+        <div class="hi">
+          <img src="${e.th}" alt="Wound thumbnail">
+          <div>
+            <b>${e.d}</b><br>
+            Level: ${e.lv} &nbsp;·&nbsp; Tissue Index: <b>${e.w}%</b>
+          </div>
+        </div>
+      `).join('')
+    : '<small>No scans archived yet. Complete a scan and tap <b>SAVE TO TRACKER</b>.</small>';
+
+  let c = '';
+  if (h.length > 1) {
+    const a = h[h.length - 2];
+    const b = h[h.length - 1];
+    const d = +(b.w - a.w).toFixed(1);
+    let statusText = '';
+    let statusColor = '#94a3b8';
+
+    if (Math.abs(d) < 0.1) {
+      statusText = 'Stable: Tissue color metrics unchanged compared to previous record.';
+      statusColor = '#60a5fa';
+    } else if (d < 0) {
+      statusText = `Improving: Tissue distress index is ${Math.abs(d)}% lower than previous record.`;
+      statusColor = '#34d399';
+    } else {
+      statusText = `Worsening: Tissue distress index is ${Math.abs(d)}% higher than previous record.`;
+      statusColor = '#f87171';
+    }
+
+    c = `
+      <div class="row" style="margin-top:14px">
+        <div><small style="letter-spacing:1px;color:#94a3b8">PREVIOUS SCAN</small><br><img src="${a.th}" alt="Previous scan"></div>
+        <div><small style="letter-spacing:1px;color:#94a3b8">LATEST SCAN</small><br><img src="${b.th}" alt="Latest scan"></div>
+      </div>
+      <p style="margin:10px 0 0"><b style="color:${statusColor}">${statusText}</b></p>
+    `;
+  }
+  $('cmp').innerHTML = c;
+}
+
+$('sv').onclick = () => {
+  if (!last) return;
+  const c = document.createElement('canvas');
+  c.width = 120;
+  c.height = 90;
+  c.getContext('2d').drawImage($('o'), 0, 0, 120, 90);
+  const h = SV();
+  h.push({
+    d: new Date().toLocaleString(),
+    lv: last.lv,
+    w: last.w,
+    th: c.toDataURL('image/jpeg', 0.6)
+  });
+  try {
+    localStorage.setItem('hm', JSON.stringify(h.slice(-10)));
+  } catch (e) {}
+  trk();
+  $('th').scrollIntoView({ behavior: 'smooth' });
+  playBeep(880, 'sine', 0.1);
+};
+
+$('clr').onclick = () => {
+  if (confirm('Clear all stored wound scan history on this browser?')) {
+    try {
+      localStorage.removeItem('hm');
+    } catch (e) {}
+    trk();
+  }
+};
+trk();
+
+// SMS Dispatch
+$('sm').onclick = () => {
+  if (!pos) {
+    $('lt').textContent = 'Please tap USE MY CURRENT GPS first to lock coordinates.';
+    $('lt').style.color = '#f87171';
+    return;
+  }
+  const phone = ($('ec').value || '').trim();
+  const mapUrl = `https://www.google.com/maps?q=${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
+  const bodyText = `EMERGENCY MEDICAL ALERT: I require medical assistance. Current GPS coordinates: ${mapUrl}`;
+  const isApple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
+  const sep = isApple ? '&' : '?';
+  const targetUri = phone
+    ? `sms:${encodeURIComponent(phone)}${sep}body=${encodeURIComponent(bodyText)}`
+    : `sms:${sep}body=${encodeURIComponent(bodyText)}`;
+  window.open(targetUri, '_blank');
+};
+
+// First Aid Checklist
+const CK = [
+  'Sanitize hands thoroughly with soap & clean water prior to contact',
+  'Arrest active hemorrhage: apply continuous, firm pressure with sterile gauze',
+  'Copiously irrigate wound margins with cool running tap water or saline for 5 minutes',
+  'Apply a thin layer of antibacterial ointment and secure a sterile non-stick pad',
+  'Inspect and replace dressing daily; monitor for warmth, edema, or purulent drainage'
+];
+
+$('ck').innerHTML = CK.map((t, idx) => `
+  <label>
+    <input type="checkbox" onchange="ckp()">
+    <span>${t}</span>
+  </label>
+`).join('');
+
+function ckp() {
+  const checked = document.querySelectorAll('#ck input:checked').length;
+  const pct = Math.round((checked / CK.length) * 100);
+  $('cp').style.width = pct + '%';
+  $('ck-count').textContent = `${checked} / ${CK.length} COMPLETED (${pct}%)`;
+  if (pct === 100) {
+    $('ck-count').textContent = '✔ ALL FIRST AID MEASURES COMPLETED (100%)';
+    playBeep(980, 'sine', 0.15);
+  }
+}
+
+// First Aid Quiz
+const Q = [
+  [
+    'What is the recommended duration to irrigate a fresh wound under running water?',
+    ['10 seconds', 'Approximately 5 minutes', 'Wounds should never be washed with water'],
+    1,
+    'Gently rinsing under cool clean running water for ~5 minutes effectively flushes foreign particles and reduces microbial burden.'
+  ],
+  [
+    'What is the most effective immediate action for uncontrolled bleeding?',
+    ['Apply scalding water', 'Continuously lift the cloth every 15 seconds to look', 'Apply continuous, firm compression with a clean sterile dressing'],
+    2,
+    'Firm, uninterrupted pressure for at least 10 minutes allows clotting platelets and fibrin to form an intact plug.'
+  ],
+  [
+    'Which clinical presentation strongly indicates developing bacterial infection?',
+    ['Expanding redness, purulent exudate, throbbing pain, or fever', 'A thin, flat, dry brown scab', 'Mild transient itching around healing edges'],
+    0,
+    'Spreading erythema, warmth, pus, and systemic fever signify invasive infection necessitating medical intervention.'
+  ]
+];
+
+let qs = 0, qa = 0;
+
+function renderQuiz() {
+  $('qz').innerHTML = Q.map((q, i) => `
+    <div class="quiz-item" data-qid="${i}">
+      <p>${i + 1}. ${q[0]}</p>
+      <div class="row">
+        ${q[1].map((o, j) => `
+          <button type="button" onclick="qk(this, ${i}, ${j})">${o}</button>
+        `).join('')}
+      </div>
+      <div class="quiz-expl hide" style="font-size:12.5px;color:#93c5fd;margin-top:8px"></div>
+    </div>
+  `).join('');
+  $('qr').textContent = `SCORE: ${qs} / ${qa}`;
+}
+renderQuiz();
+
+function qk(btn, i, j) {
+  const container = btn.closest('.quiz-item');
+  if (container.dataset.answered) return;
+  container.dataset.answered = '1';
+  qa++;
+
+  const isCorrect = (j === Q[i][2]);
+  if (isCorrect) {
+    qs++;
+    btn.style.background = '#065f46';
+    btn.style.borderColor = '#34d399';
+    btn.style.color = '#ffffff';
+    btn.style.boxShadow = '0 0 15px rgba(52, 211, 153, 0.6)';
+    playBeep(880, 'sine', 0.1);
+  } else {
+    btn.style.background = '#7f1d1d';
+    btn.style.borderColor = '#f87171';
+    btn.style.color = '#ffffff';
+    btn.style.boxShadow = '0 0 15px rgba(248, 113, 113, 0.6)';
+    playBeep(300, 'sawtooth', 0.15);
+
+    // Highlight the actual correct option
+    const allBtns = container.querySelectorAll('button');
+    const correctBtn = allBtns[Q[i][2]];
+    if (correctBtn) {
+      correctBtn.style.background = '#065f46';
+      correctBtn.style.borderColor = '#34d399';
+      correctBtn.style.color = '#ffffff';
+      correctBtn.innerHTML += ' <span style="color:#34d399">✔ (Correct)</span>';
+    }
+  }
+
+  // Show explanation
+  const expl = container.querySelector('.quiz-expl');
+  if (expl) {
+    expl.textContent = '💡 ' + Q[i][3];
+    expl.classList.remove('hide');
+  }
+
+  $('qr').textContent = `SCORE: ${qs} / ${qa}`;
+
+  if (qa === Q.length) {
+    $('qz-reset').style.display = 'inline-flex';
+  }
+}
+
+$('qz-reset').onclick = () => {
+  qs = 0;
+  qa = 0;
+  $('qz-reset').style.display = 'none';
+  renderQuiz();
+};
+
+// ========================================================
+// SESSION-BASED PHONE CAMERA / PEER-TO-PEER PHOTO LINK
+// ========================================================
+// The phone page is a separate public/static HTML file.
+// Set this to the URL where wound-phone.html is hosted (HTTPS recommended).
+function autoPhonePageUrl(){
+  try {
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      return new URL('wound-phone.html', location.href).href;
+    }
+  } catch(e) {}
+  return '';
+}
+const DEFAULT_PHONE_PAGE_URL = autoPhonePageUrl();
+let PHONE_PAGE_URL = localStorage.getItem('healMetrixPhonePageUrl') || DEFAULT_PHONE_PAGE_URL;
+
+let peerInstance = null;
+let activePeerConn = null;
+let currentSessionId = null;
+
+// TURN credentials endpoint. Deploy turn-worker.js to Cloudflare Workers and paste its
+// HTTPS URL here. TURN is what allows the phone on mobile data to connect to a Mac
+// behind a different NAT/firewall. Leave blank for direct/STUN-only mode.
+const TURN_CREDENTIALS_URL = localStorage.getItem('healMetrixTurnUrl') || '';
+
+async function getIceConfig() {
+  const fallback = { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' }
+  ] };
+  if (!TURN_CREDENTIALS_URL) return fallback;
+  try {
+    const r = await fetch(TURN_CREDENTIALS_URL, { cache: 'no-store' });
+    if (!r.ok) throw new Error('TURN credentials HTTP ' + r.status);
+    const data = await r.json();
+    if (!Array.isArray(data.iceServers) || !data.iceServers.length) throw new Error('No ICE servers returned');
+    return { iceServers: data.iceServers };
+  } catch (e) {
+    console.warn('TURN credentials unavailable; using STUN only:', e);
+    return fallback;
+  }
+}
+
+function handleIncomingWoundPhoto(dataUrl) {
+  playBeep(1100, 'triangle', 0.15);
+  closePhoneModal();
+  const img = new Image();
+  img.onload = () => {
+    stopCam();
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    run(c);
+    $('msg').textContent = '✔ Photo received from phone. Analysing…';
+    $('msg').style.color = '#34d399';
+  };
+  img.src = dataUrl;
+}
+
+function phoneLinkForSession(sessionId) {
+  const base = PHONE_PAGE_URL.trim();
+  if (!base || base.includes('YOUR-USERNAME')) return '';
+  return `${base}${base.includes('?') ? '&' : '?'}session=${encodeURIComponent(sessionId)}`;
+}
+
+function updateSessionQr() {
+  const box = $('qr-target-container');
+  if (!box || !currentSessionId) return;
+  const url = phoneLinkForSession(currentSessionId);
+  if (!url) {
+    box.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:190px;padding:18px;text-align:center;background:#061722;border-radius:14px"><div style="font-size:28px;margin-bottom:8px">📱</div><b style="color:#fbbf24">Phone page not hosted yet</b><small style="color:#9ab7c4;margin-top:6px;line-height:1.4">Host wound-phone.html online, then enter its URL below. Once hosted, every new session gets a fresh QR automatically.</small></div>';
+    $('phone-sync-status').textContent = 'Host the phone page once to enable QR pairing';
+    $('phone-sync-status').style.color = '#fbbf24';
+    return;
+  }
+  generateQrCode('qr-target-container', url);
+  $('phone-sync-status').textContent = 'Scan this code with your phone';
+  $('phone-sync-status').style.color = '#fbbf24';
+  const copy = $('btn-copy-pairing-link');
+  if (copy) {
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(url); } catch (e) {}
+      copy.textContent = 'Copied';
+      setTimeout(() => copy.textContent = 'Copy phone link', 1600);
+    };
+  }
+}
+
+async function createDesktopSession() {
+  if (peerInstance && !peerInstance.destroyed) peerInstance.destroy();
+  peerInstance = null;
+  activePeerConn = null;
+  const randCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+  currentSessionId = 'HM-' + randCode;
+
+  if (typeof Peer === 'undefined') {
+    $('phone-room-code').textContent = currentSessionId;
+    $('phone-sync-status').textContent = 'PeerJS library not loaded';
+    updateSessionQr();
+    return;
+  }
+
+  try {
+    const iceConfig = await getIceConfig();
+    peerInstance = new Peer(currentSessionId, { debug: 1, config: iceConfig });
+    peerInstance.on('open', id => {
+      currentSessionId = id;
+      $('phone-room-code').textContent = id;
+      updateSessionQr();
+    });
+    peerInstance.on('connection', conn => {
+      activePeerConn = conn;
+      $('phone-sync-status').textContent = '🟢 Phone connected — ready for photo';
+      $('phone-sync-status').style.color = '#34d399';
+      playBeep(920, 'sine', 0.12);
+      let rx = null;
+      conn.on('data', data => {
+        if (!data) return;
+        if (data.type === 'photo-start') {
+          rx = { total: Number(data.total) || 0, size: Number(data.size) || 0, mime: data.mime || 'image/jpeg', chunks: [], received: 0 };
+          if ($('phone-sync-status')) $('phone-sync-status').textContent = '📥 Receiving photo…';
+          return;
+        }
+        if (data.type === 'photo-chunk' && rx) {
+          const u8 = data.data instanceof Uint8Array ? data.data : new Uint8Array(data.data);
+          rx.chunks[data.index] = u8; rx.received += u8.byteLength;
+          const pct = rx.size ? Math.min(100, Math.round(rx.received / rx.size * 100)) : 0;
+          if ($('phone-sync-status')) $('phone-sync-status').textContent = `📥 Receiving photo… ${pct}%`;
+          return;
+        }
+        if (data.type === 'photo-end' && rx) {
+          const blob = new Blob(rx.chunks, {type: rx.mime});
+          const reader = new FileReader();
+          reader.onload = () => {
+            const url = reader.result;
+            rx = null;
+            handleIncomingWoundPhoto(url);
+            try { conn.send({ type: 'received' }); } catch (e) {}
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+        // Backward-compatible single-message photo.
+        if (data.type === 'wound-photo' && data.image) {
+          handleIncomingWoundPhoto(data.image);
+          try { conn.send({ type: 'received' }); } catch (e) {}
+        }
+      });
+      conn.on('close', () => {
+        if ($('phone-sync-status')) {
+          $('phone-sync-status').textContent = 'Phone disconnected — scan again to reconnect';
+          $('phone-sync-status').style.color = '#fbbf24';
+        }
+      });
+    });
+    peerInstance.on('error', err => {
+      console.warn('PeerJS error:', err);
+      if ($('phone-sync-status')) {
+        $('phone-sync-status').textContent = `Session error: ${err.type || 'connection failed'}`;
+        $('phone-sync-status').style.color = '#f87171';
+      }
+    });
+  } catch (e) {
+    console.warn('Peer creation failed:', e);
+    $('phone-sync-status').textContent = 'Could not start session';
+  }
+}
+
+function openPhoneModal() {
+  $('phone-modal').classList.remove('hide');
+  createDesktopSession();
+}
+function closePhoneModal() { $('phone-modal').classList.add('hide'); }
+if ($('btn-phone-pair')) $('btn-phone-pair').onclick = openPhoneModal;
+if ($('modal-close-btn')) $('modal-close-btn').onclick = closePhoneModal;
+if ($('btn-regen-peer')) $('btn-regen-peer').onclick = createDesktopSession;
+if ($('phone-page-url')) $('phone-page-url').value = PHONE_PAGE_URL;
+if ($('phone-page-url') && PHONE_PAGE_URL) $('phone-page-url').title = 'Automatically detected from this website when hosted online.';
+// Optional TURN endpoint is intentionally configured in browser storage so no secret is embedded.
+if ($('btn-save-phone-url')) $('btn-save-phone-url').onclick = () => {
+  PHONE_PAGE_URL = ($('phone-page-url').value || '').trim().replace(/\s+/g,'');
+  localStorage.setItem('healMetrixPhonePageUrl', PHONE_PAGE_URL);
+  updateSessionQr();
+};
+const phoneModal = $('phone-modal');
+if (phoneModal) phoneModal.onclick = e => { if (e.target === phoneModal) closePhoneModal(); };
+
+function generateQrCode(containerId, text) {
+  const container = $(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    try {
+      new QRCode(container, { text, width: 176, height: 176, colorDark: '#031018', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      return;
+    } catch (err) { console.warn('QRCode JS error:', err); }
+  }
+  const img = document.createElement('img');
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}`;
+  img.alt = 'QR Code'; img.width = 180; img.height = 180; img.style.display = 'block'; img.style.margin = 'auto';
+  container.appendChild(img);
+}
+
+// -------------------------------------------------------------
+// MOBILE REMOTE SHUTTER CONTROLLER (used by wound-phone.html only)
+// -------------------------------------------------------------
+const searchParams = new URLSearchParams(window.location.search);
+const isMobileRemote = searchParams.get('mode') === 'remote';
+const targetPeerHost = searchParams.get('peer');
+
+if (isMobileRemote && targetPeerHost) {
+  const mainEl = document.querySelector('main');
+  if (mainEl) mainEl.style.display = 'none';
+  const emStrip = document.querySelector('.emergency-strip');
+  if (emStrip) emStrip.style.display = 'none';
+  const remote = $('remote-view');
+  if (remote) remote.style.display = 'block';
+}
+
+</script>
+</body>
+</html>
