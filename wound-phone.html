@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06131f">
+<title>HEAL METRIX • Phone Camera</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--bg:#04101a;--card:#0a1c2a;--line:#16465a;--text:#effffc;--muted:#9ab7c4;--teal:#2dd4bf;--green:#34d399;--red:#fb7185;--amber:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#10344a 0,#04101a 55%,#02080e 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding:20px 14px 32px}.wrap{max-width:520px;margin:auto}.brand{font-size:11px;font-weight:800;letter-spacing:2px;color:#8ff3e7;margin:8px 0}.card{background:rgba(7,25,38,.92);border:1px solid rgba(45,212,191,.2);border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}h1{font-size:24px;margin:4px 0 6px;letter-spacing:.5px}p{color:var(--muted);font-size:13px;line-height:1.45;margin:0 0 14px}.session{display:flex;gap:8px;align-items:center;background:#061722;border:1px solid rgba(103,232,249,.16);border-radius:12px;padding:11px 12px;margin-bottom:12px}.session span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.session b{font-size:18px;letter-spacing:2px;color:#67e8f9}.status{border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);color:var(--amber);margin-bottom:12px}.status.ok{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.25);color:var(--green)}.status.bad{background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.25);color:var(--red)}.capture{width:100%;min-height:170px;border:1px dashed rgba(103,232,249,.25);border-radius:14px;background:#061722;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:12px}.capture img{width:100%;max-height:360px;object-fit:contain;display:block}.placeholder{text-align:center;padding:28px;color:var(--muted);font-size:13px}.btn{width:100%;border:1px solid #2dd4bf;background:linear-gradient(135deg,#0f766e,#0e7490);color:white;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.tiny{font-size:10.5px;color:var(--muted);line-height:1.45;margin-top:12px}.progress{height:7px;background:#0b2634;border-radius:20px;overflow:hidden;margin-top:10px}.bar{height:100%;width:0;background:var(--teal);transition:width .15s}.manual{display:flex;gap:8px;margin-top:12px}.manual input{flex:1;min-width:0;background:#061722;color:white;border:1px solid #1c5367;border-radius:10px;padding:11px;font-size:14px}.manual button{border:1px solid #2dd4bf;background:#0b5260;color:white;border-radius:10px;padding:0 14px;font-weight:700}@media(max-width:420px){body{padding:12px}.card{padding:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">HEAL METRIX • PHONE CAMERA</div>
+  <div class="card">
+    <h1>Send wound photo</h1>
+    <p>Take one photo. It will be sent automatically to the connected scanner.</p>
+    <div class="session"><div><span>Session</span><br><b id="sessionCode">—</b></div></div>
+    <div id="status" class="status">Connecting…</div>
+    <div id="preview" class="capture"><div class="placeholder">Your photo preview will appear here.</div></div>
+    <input id="camera" type="file" accept="image/*" capture="environment" hidden>
+    <button id="take" class="btn" disabled>📷 Take wound photo</button>
+    <div id="progressWrap" style="display:none"><div class="progress"><div id="bar" class="bar"></div></div><div id="progressText" class="tiny">Sending…</div></div>
+    <div class="manual">
+      <input id="manualSession" maxlength="32" placeholder="Enter session ID if needed">
+      <button id="join">Join</button>
+    </div>
+    <div class="tiny">Works across different Wi‑Fi/mobile networks when WebRTC can establish a direct path. Internet is needed for session signalling. No photo is uploaded to this page.</div>
+  </div>
+</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let session = (params.get('session') || '').trim();
+  let peer = null, conn = null, connected = false, sending = false;
+  const CHUNK = 48 * 1024;
+
+  $('sessionCode').textContent = session || 'ENTER BELOW';
+  $('manualSession').value = session;
+
+  function status(text, cls='') {
+    $('status').textContent = text;
+    $('status').className = 'status' + (cls ? ' '+cls : '');
+  }
+
+  function connect(id) {
+    if (!id) { status('Enter the session ID from the scanner.','bad'); return; }
+    if (peer && !peer.destroyed) peer.destroy();
+    peer = null; conn = null; connected = false;
+    session = id;
+    $('sessionCode').textContent = session;
+    status('Connecting…');
+    if (typeof Peer === 'undefined') { status('PeerJS failed to load. Check internet.','bad'); return; }
+    try {
+      peer = new Peer({debug:0});
+      peer.on('open', () => {
+        conn = peer.connect(session, {reliable:true, serialization:'binary'});
+        conn.on('open', () => {
+          connected = true;
+          status('🟢 Connected — ready to take photo','ok');
+          $('take').disabled = false;
+        });
+        conn.on('data', msg => {
+          if (msg && msg.type === 'received') status('✔ Photo received by scanner','ok');
+        });
+        conn.on('close', () => { connected=false; $('take').disabled=true; status('Phone disconnected. Re-scan the QR code.','bad'); });
+        conn.on('error', () => { connected=false; $('take').disabled=true; status('Connection error. Try the QR code again.','bad'); });
+      });
+      peer.on('error', err => { connected=false; $('take').disabled=true; status('Could not connect: '+(err.type||'network error'),'bad'); });
+    } catch(e) { status('Could not start connection.','bad'); }
+  }
+
+  function prepareImage(file) {
+    return new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let w=img.naturalWidth,h=img.naturalHeight,max=1280;
+          if (w>max || h>max) { if(w>=h){h=Math.round(h*max/w);w=max}else{w=Math.round(w*max/h);h=max} }
+          const c=document.createElement('canvas'); c.width=w;c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          c.toBlob(b => b ? resolve(b) : reject(new Error('image conversion failed')), 'image/jpeg', .82);
+        };
+        img.onerror=reject; img.src=reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function sendPhoto(file) {
+    if (!connected || !conn || !conn.open || sending) return;
+    sending = true; $('take').disabled=true; $('progressWrap').style.display='block'; $('bar').style.width='0%';
+    try {
+      const blob = await prepareImage(file);
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const total = Math.ceil(bytes.length/CHUNK);
+      conn.send({type:'photo-start', total, size:bytes.length, mime:'image/jpeg'});
+      for(let i=0;i<total;i++){
+        const chunk = bytes.slice(i*CHUNK, Math.min((i+1)*CHUNK, bytes.length));
+        conn.send({type:'photo-chunk', index:i, data:chunk});
+        const pct=Math.round((i+1)/total*100); $('bar').style.width=pct+'%'; $('progressText').textContent=`Sending… ${pct}%`;
+        await new Promise(r=>setTimeout(r,0));
+      }
+      conn.send({type:'photo-end'});
+      $('progressText').textContent='Photo sent. Waiting for scanner…';
+    } catch(e) {
+      status('Photo could not be sent. Try again.','bad');
+      $('progressWrap').style.display='none';
+    } finally { sending=false; $('take').disabled=!connected; }
+  }
+
+  $('take').onclick = () => $('camera').click();
+  $('camera').onchange = e => { const f=e.target.files?.[0]; if(f) { const u=URL.createObjectURL(f); $('preview').innerHTML='<img alt="Wound photo preview">'; $('preview').querySelector('img').src=u; sendPhoto(f); } e.target.value=''; };
+  $('join').onclick = () => { const id=$('manualSession').value.trim(); if(id) connect(id); };
+  if (session) connect(session); else status('Scan the QR code from the scanner.','bad');
+})();
+</script>
+</body>
+</html>
